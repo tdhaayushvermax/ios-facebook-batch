@@ -31,6 +31,6 @@ After that you construct and execute a batch request like so:
      }
      
      ];
-[connection start];
+     [connection start];
 
 But it starts to be more power full if you start using fql queries inside the batch.
