@@ -19,13 +19,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#import "Facebook+Batch.h"
-#import "NSObject+SBJSON.h"
-#import "NSString+SBJSON.h"
+#import "FBRequest+Batch.h"
 #import "objc/runtime.h"
+#import "JSONKit.h"
 
-// Defaults values for JSON requests
-// https://developers.facebook.com/docs/reference/api/batch/
+static NSString *kFacebookBatchKeyBatch = @"batch";
+static NSString *kFacebookBatchKeyAccessToken = @"access_token";
 static NSString *kFacebookBatchKeyPath = @"relative_url";
 static NSString *kFacebookBatchKeyName = @"name";
 static NSString *kFacebookBatchKeyMethod = @"method";
@@ -35,7 +34,8 @@ static NSString *kFacebookBatchKeyOmit = @"omit_response_on_success";
 /** Static pointer for associating the batch request data with the Facebook instance */
 static void *kFBBatchKey = &kFBBatchKey;
 
-@implementation Facebook (Batch)
+@implementation FBRequest (Batch)
+
 
 #pragma mark - Convenience wrapper methods
 
@@ -74,11 +74,11 @@ static void *kFBBatchKey = &kFBBatchKey;
                          method:(NSString *)method
                            body:(NSString *)body
 {
-        [self batchAddRequestWithPath:path
-                                 name:name
-                               method:method
-                                 body:body
-                         omitResponse:NO];
+    [self batchAddRequestWithPath:path
+                             name:name
+                           method:method
+                             body:body
+                     omitResponse:NO];
 }
 
 #pragma mark - Add Request implementation
@@ -116,9 +116,10 @@ static void *kFBBatchKey = &kFBBatchKey;
     [requests addObject:dict];
 }
 
-#pragma mark - Batch request execution
 
-- (FBRequest *)batchRequestWithDelegate:(id<FBRequestDelegate>)delegate
+#pragma mark - Batch request 
+
+- (FBRequest *)batchRequest:(NSString *)accessToken
 {
     // Retrieve the already associated requests array
     NSMutableArray *requests = (NSMutableArray*)objc_getAssociatedObject(self, kFBBatchKey);
@@ -126,13 +127,19 @@ static void *kFBBatchKey = &kFBBatchKey;
     assert([requests count] > 0);
     // Remove the associated requests array, after this we don't need it anymore
     objc_setAssociatedObject(self, kFBBatchKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    NSMutableDictionary *batchRequest = [NSMutableDictionary dictionaryWithObject:[requests JSONRepresentation]
-                                                                           forKey:@"batch"];
-    // Perform the actual batch request, always via HTTP method POST
-    return [self requestWithGraphPath:@""
-                            andParams:batchRequest
-                        andHttpMethod:@"POST"
-                          andDelegate:delegate];
+    
+    
+    
+    NSMutableDictionary *batchRequest = [NSMutableDictionary dictionaryWithObject:[requests JSONString]
+                                                                           forKey:kFacebookBatchKeyBatch];
+    [batchRequest setObject:accessToken forKey:kFacebookBatchKeyAccessToken];
+    
+    NSLog(@"Batch Request::%@",batchRequest);
+    
+     // Build the actual batch request, always via HTTP method POST
+    return [FBRequest requestWithGraphPath:@"" parameters:batchRequest HTTPMethod:@"POST"];
+   
+   
 }
 
 #pragma mark - Result handling implementation
@@ -145,7 +152,7 @@ static void *kFBBatchKey = &kFBBatchKey;
         for (id batch in result) {
             if ([batch isKindOfClass:[NSDictionary class]]) {
                 NSString *body = [batch objectForKey:@"body"];
-                [batchResult addObject:[body JSONValue]];
+                [batchResult addObject:[body JSONString]];
             } else {
                 [batchResult addObject:batch];
             }
