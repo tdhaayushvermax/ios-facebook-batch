@@ -13,15 +13,24 @@ Using this is simple, you construct your Facebook instance as instructed in the 
 
 After that you construct and execute a batch request like so:
 
-    // Facebook instance initialized and ready as facebook
-    [facebook batchAddRequestWithPath:@"me"];
-    [facebook batchAddRequestWithPath:@"me/friends?fields=id&limit=5"
-                                 name:@"myfriends"
-                               method:@"GET"
-                                 body:nil
-                         omitResponse:YES];
-    [facebook batchAddRequestWithPath:@"?ids={result=myfriends:$.data.*.id}"];
-    FBRequest *batchRequest = [facebook batchRequestWithDelegate:self];
-    // expect results in your FBRequestDelegate implementation
+       FBRequest *fbRequest =  [[FBRequest alloc] init];
+    [fbRequest batchAddRequestWithPath:@"yoururl1"];
+    [fbRequest batchAddRequestWithPath:@"yoururl2"];
+    
+    fbRequest= [fbRequest batchRequest:yourtoken];
+    
+    
+    FBRequestConnection *connection = [[FBRequestConnection alloc] init];
+    
+    [connection addRequest:fbRequest
+         completionHandler:
+     ^(FBRequestConnection *connection, id result, NSError *error) {
+         if(!error){
+             [fbRequest batchResult:result];
+         }
+     }
+     
+     ];
+[connection start];
 
 But it starts to be more power full if you start using fql queries inside the batch.
