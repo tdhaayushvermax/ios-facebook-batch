@@ -37,25 +37,34 @@
  
  After that you construct and execute a batch request like so:
  
-        // Facebook instance initialized and ready as facebook
-        [facebook batchAddRequestWithPath:@"me"];   // Request my info
-        [facebook batchAddRequestWithPath:@"me/friends?fields=id&limit=5"
-                                     name:@"myfriends"
-                                   method:@"GET"
-                                     body:nil
-                             omitResponse:YES];     // Request 5 friends
-        // But we'll just use that info as input to the next request
-        [facebook batchAddRequestWithPath:@"?ids={result=myfriends:$.data.*.id}"];
-        FBRequest *batchRequest = [facebook batchRequestWithDelegate:self];
-        // expect results in your FBRequestDelegate implementation
+       FBRequest *fbRequest =  [[FBRequest alloc] init];
+    [fbRequest batchAddRequestWithPath:@"yoururl1"];
+    [fbRequest batchAddRequestWithPath:@"yoururl2"];
+    
+    fbRequest= [fbRequest batchRequest:yourtoken];
+    
+    
+    FBRequestConnection *connection = [[FBRequestConnection alloc] init];
+    
+    [connection addRequest:fbRequest
+         completionHandler:
+     ^(FBRequestConnection *connection, id result, NSError *error) {
+         [self batchRequestCompleted:connection result:result error:error];
+     }
+     
+     ];
+[connection start];
+ 
+    Implement batchRequestCompleted to handle your result.
+    
  
  But it starts to be more power full if you start using FQL queries inside the batch.
  */
 
-#import <UIKit/UIKit.h>
-#import "FBConnect.h"
+#import <FacebookSDK/FacebookSDK.h>
 
-@interface Facebook (Batch)
+@interface FBRequest (Batch)
+
 
 /// ------------------------------------------------------------------------
 /// @name Adding requests to the Batch
@@ -119,17 +128,16 @@
                           body:(NSString *)body
                   omitResponse:(BOOL)omit;
 
+
 /// ------------------------------------------------------------------------
 /// @name Execute the Batch request
 /// ------------------------------------------------------------------------
 
 /**
- Perform the batched request to the Facebook Graph API in the correct way.
- After calling this method a new batch request can be constructed immediately
- @param delegate FBRequestDelegate handling the response
+ Build the batched request to the Facebook Graph API in the correct way.
  @result FBRequest instance
  */
-- (FBRequest *)batchRequestWithDelegate:(id<FBRequestDelegate>)delegate;
+- (FBRequest *)batchRequest:(NSString *)accessToken;
 
 /// ------------------------------------------------------------------------
 /// @name Result handling
