@@ -49,13 +49,15 @@
     [connection addRequest:fbRequest
          completionHandler:
      ^(FBRequestConnection *connection, id result, NSError *error) {
-         [self batchRequestCompleted:connection result:result error:error];
+         if(!error){
+             [fbRequest batchResult:result];
+         }
      }
      
      ];
 [connection start];
  
-    Implement batchRequestCompleted to handle your result.
+   
     
  
  But it starts to be more power full if you start using FQL queries inside the batch.
